@@ -1,3 +1,9 @@
+CREATE TABLE tb_usuario (
+    id_usuario SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE
+);
+
 CREATE TABLE tb_agendamento(
     id_agendamento SERIAL PRIMARY KEY,
     titulo VARCHAR(100) NOT NULL,
@@ -8,9 +14,9 @@ CREATE TABLE tb_agendamento(
     id_usuario INT NOT NULL,
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT ck_status_agendamento CHECK (status IN ('PENDENTE', 'CONFIRMADO', 'CANCELADO')),
+    CONSTRAINT ck_status_agendamento CHECK (status IN ('AGENDADO', 'PENDENTE', 'CONFIRMADO', 'CANCELADO')),
     CONSTRAINT ck_intervalo_agendamento CHECK (data_inicio < data_fim),
-    CONSTRAINT fk_usuario FOREIGN KEY (id_usuario) REFERENCES tb_usuario(id_usuario),
+    CONSTRAINT fk_usuario FOREIGN KEY (id_usuario) REFERENCES tb_usuario(id_usuario)
 );
 
 
