@@ -1,6 +1,8 @@
 package api.agendamento.demo.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
 
 import api.agendamento.demo.dto.AgendamentoCreateRequest;
@@ -10,7 +12,6 @@ import api.agendamento.demo.mapper.AgendamentoMapper;
 import api.agendamento.demo.model.Agendamento;
 import api.agendamento.demo.repository.AgendamentoRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.validation.annotation.Validated;
 
