@@ -64,7 +64,7 @@ public class AgendamentoService {
         return AgendamentoMapper.toResponse(agendamento);
     }
 
-
+    @Transactional(readOnly = true)
     public AgendamentoResponse procurar(Long idAgendamento) {
         Agendamento agendamento = agendamentoRepository.findById(idAgendamento)
                 .orElseThrow(() -> new EntityNotFoundException("Agendamento não encontrado com o ID: " + idAgendamento));
