@@ -2,6 +2,7 @@ package api.agendamento.demo.model;
 
 import java.time.LocalDateTime;
 
+import api.agendamento.demo.dto.AgendamentoResponse;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Enumerated;

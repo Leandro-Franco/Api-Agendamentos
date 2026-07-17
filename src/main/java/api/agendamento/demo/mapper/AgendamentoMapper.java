@@ -3,6 +3,7 @@ package api.agendamento.demo.mapper;
 import java.time.LocalDateTime;
 
 import api.agendamento.demo.dto.AgendamentoCreateRequest;
+import api.agendamento.demo.dto.AgendamentoResponse;
 import api.agendamento.demo.dto.AgendamentoUpdateRequest;
 import api.agendamento.demo.model.Agendamento;
 import api.agendamento.demo.model.StatusAgendamento;
@@ -21,18 +22,18 @@ public class AgendamentoMapper {
         .build();
     }
 
-    public static Agendamento toResponse(Agendamento info) {
-        return Agendamento.builder()
-                .idAgendamento(info.getIdAgendamento())
-                .titulo(info.getTitulo())
-                .descricao(info.getDescricao())
-                .dataInicio(info.getDataInicio())
-                .dataFim(info.getDataFim())
-                .status(info.getStatus())
-                .idUsuario(info.getIdUsuario())
-                .criadoEm(info.getCriadoEm())
-                .atualizadoEm(info.getAtualizadoEm())
-        .build();
+    public static AgendamentoResponse toResponse(Agendamento info) {
+        return new AgendamentoResponse(
+                info.getIdAgendamento(),
+                info.getTitulo(),
+                info.getDescricao(),
+                info.getDataInicio().toString(),
+                info.getDataFim().toString(),
+                info.getStatus(),
+                info.getIdUsuario(),
+                info.getCriadoEm().toString(),
+                info.getAtualizadoEm().toString()
+        );
     }
 
     public static void updateEntity(Agendamento agendamento, AgendamentoUpdateRequest request) {
