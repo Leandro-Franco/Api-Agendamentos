@@ -12,17 +12,22 @@ import api.agendamento.demo.repository.AgendamentoRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
+import org.springframework.validation.annotation.Validated;
 
 @Service
+@Validated
 public class AgendamentoService {
+
     private final AgendamentoRepository agendamentoRepository;
+
 
     public AgendamentoService(AgendamentoRepository agendamentoRepository) {
         this.agendamentoRepository = agendamentoRepository;
     }
 
+
     @Transactional
-    public AgendamentoResponse create(@Valid AgendamentoCreateRequest request) {
+    public AgendamentoResponse criar(@Valid AgendamentoCreateRequest request) {
 
         validateIntervaloDeDatas(request.dataInicio(), request.dataFim());
         validateDataIsNull(request.dataInicio(), request.dataFim());
@@ -33,15 +38,22 @@ public class AgendamentoService {
         return AgendamentoMapper.toResponse(agendamento);
     }
 
-    
+    @Transactional
     public AgendamentoResponse atualizar(Long idAgendamento, @Valid AgendamentoUpdateRequest request) {
+
         Agendamento agendamento = agendamentoRepository.findById(idAgendamento)
                 .orElseThrow(() -> new EntityNotFoundException("Agendamento não encontrado com o ID: " + idAgendamento));
 
         if (request.dataInicio() != null && request.dataFim() != null) {
-            LocalDateTime dataInicio = LocalDateTime.parse(request.dataInicio());
-            LocalDateTime dataFim = LocalDateTime.parse(request.dataFim());
-            validateDataIsNull(dataInicio, dataFim);
+
+            LocalDateTime dataInicio = request.dataInicio() != null
+                ? LocalDateTime.parse(request.dataInicio())
+               : agendamento.getDataInicio();
+
+            LocalDateTime dataFim = request.dataFim() != null
+               ? LocalDateTime.parse(request.dataFim())
+                : agendamento.getDataFim();
+
             validateIntervaloDeDatas(dataInicio, dataFim);
             checkConflitoDeAgendamento(agendamento.getIdUsuario(), dataInicio, dataFim, idAgendamento);
         }
@@ -52,6 +64,57 @@ public class AgendamentoService {
     }
 
 
+    public AgendamentoResponse procurar(Long idAgendamento) {
+        Agendamento agendamento = agendamentoRepository.findById(idAgendamento)
+                .orElseThrow(() -> new EntityNotFoundException("Agendamento não encontrado com o ID: " + idAgendamento));
+
+        return AgendamentoMapper.toResponse(agendamento);
+    }
+
+
+    @Transactional
+    public void deletar(Long idAgendamento) {
+        Agendamento agendamento = agendamentoRepository.findById(idAgendamento)
+                .orElseThrow(() -> new EntityNotFoundException("Agendamento não encontrado com o ID: " + idAgendamento));
+
+        agendamentoRepository.delete(agendamento);
+    }
+
+    @Transactional
+    public AgendamentoResponse cancelar(Long idAgendamento) {
+        Agendamento agendamento = agendamentoRepository.findById(idAgendamento)
+                .orElseThrow(() -> new EntityNotFoundException("Agendamento não encontrado com o ID: " + idAgendamento));
+
+        agendamento.setStatus(api.agendamento.demo.model.StatusAgendamento.CANCELADO);
+        agendamento.setAtualizadoEm(LocalDateTime.now());
+        agendamentoRepository.save(agendamento);
+        return AgendamentoMapper.toResponse(agendamento);
+    }
+
+    @Transactional
+    public AgendamentoResponse concluir(Long idAgendamento) {
+        Agendamento agendamento = agendamentoRepository.findById(idAgendamento)
+                .orElseThrow(() -> new EntityNotFoundException("Agendamento não encontrado com o ID: " + idAgendamento));
+
+        agendamento.setStatus(api.agendamento.demo.model.StatusAgendamento.CONCLUIDO);
+        agendamento.setAtualizadoEm(LocalDateTime.now());
+        agendamentoRepository.save(agendamento);
+        return AgendamentoMapper.toResponse(agendamento);
+    }
+
+    @Transactional
+    public AgendamentoResponse confirmar(Long idAgendamento) {
+        Agendamento agendamento = agendamentoRepository.findById(idAgendamento)
+                .orElseThrow(() -> new EntityNotFoundException("Agendamento não encontrado com o ID: " + idAgendamento));
+
+        agendamento.setStatus(api.agendamento.demo.model.StatusAgendamento.CONFIRMADO);
+        agendamento.setAtualizadoEm(LocalDateTime.now());
+        agendamentoRepository.save(agendamento);
+        return AgendamentoMapper.toResponse(agendamento);
+    }
+
+
+// Validações de intervalo de datas, datas nulas e conflito de agendamento
     private void validateIntervaloDeDatas(LocalDateTime dataInicio, LocalDateTime dataFim) {
         if (dataFim.isBefore(dataInicio)) {
             throw new IllegalArgumentException("A data de fim não pode ser anterior à data de início.");
