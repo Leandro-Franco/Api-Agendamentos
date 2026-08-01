@@ -11,6 +11,6 @@ public record AgendamentoCreateRequest(
     @Size(max = 500) String descricao,
     @NotNull LocalDateTime dataInicio,
     @NotNull LocalDateTime dataFim,
-    @NotBlank Long idUsuario,
+    @NotNull Long idUsuario,
     @NotBlank @Size(max = 60)String usnomeUsuario
 ) {}
