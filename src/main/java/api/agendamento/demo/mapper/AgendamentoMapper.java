@@ -12,6 +12,7 @@ public class AgendamentoMapper {
     
     public static Agendamento toEntity(AgendamentoCreateRequest request) {
         return Agendamento.builder()
+                .idUsuario(request.idUsuario())
                 .titulo(request.titulo())
                 .descricao(request.descricao())
                 .dataInicio(request.dataInicio())

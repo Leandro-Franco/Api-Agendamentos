@@ -131,7 +131,7 @@ public class AgendamentoService {
 
 
     private void checkConflitoDeAgendamento(Long idUsuario, LocalDateTime dataInicio, LocalDateTime dataFim, Long idAgendamento) {
-        boolean hasConflict = agendamentoRepository.existsConflito(idAgendamento != null ? idAgendamento : -1L, dataFim, dataInicio, idUsuario);
+        boolean hasConflict = agendamentoRepository.existsConflito(idUsuario, dataInicio, dataFim, idAgendamento);
         if (hasConflict) {
             throw new IllegalArgumentException("Conflito de agendamento: já existe um agendamento para o usuário nesse intervalo de datas.");
         }
