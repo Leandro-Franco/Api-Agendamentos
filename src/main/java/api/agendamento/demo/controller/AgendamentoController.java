@@ -31,36 +31,36 @@ public class AgendamentoController {
     }
 
     @PutMapping("/{id}")
-    public AgendamentoResponse atualizar(@PathVariable Long idAgendamento, @Valid @RequestBody AgendamentoUpdateRequest request) {
+    public AgendamentoResponse atualizar(@PathVariable("id") Long idAgendamento, @Valid @RequestBody AgendamentoUpdateRequest request) {
         return agendamentoService.atualizar(idAgendamento, request);
     }
 
     @PutMapping("/delete/{id}")
-    public void deletar(@PathVariable Long idAgendamento) {
+    public void deletar(@PathVariable("id") Long idAgendamento) {
         agendamentoService.deletar(idAgendamento);
     }
 
     @GetMapping("/{id}")
-    public AgendamentoResponse procurar(@PathVariable Long idAgendamento) {
+    public AgendamentoResponse procurar(@PathVariable("id") Long idAgendamento) {
         return agendamentoService.procurar(idAgendamento);
     }
 
     @PutMapping("/{id}/cancelar")
-    public AgendamentoResponse cancelar(@PathVariable Long idAgendamento) {
+    public AgendamentoResponse cancelar(@PathVariable("id") Long idAgendamento) {
         return agendamentoService.cancelar(idAgendamento);
     }
 
     @PutMapping("/{id}/concluir")
-    public AgendamentoResponse concluir(@PathVariable Long idAgendamento) {
+    public AgendamentoResponse concluir(@PathVariable("id") Long idAgendamento) {
         return agendamentoService.concluir(idAgendamento);
     }
 
     @PutMapping("/{id}/confirmar")
-    public AgendamentoResponse confirmar(@PathVariable Long idAgendamento) {
+    public AgendamentoResponse confirmar(@PathVariable("id") Long idAgendamento) {
         return agendamentoService.confirmar(idAgendamento);
     }
 
-    // public AgendamentoResponse reagendar(@PathVariable Long idAgendamento, @Valid @RequestBody AgendamentoUpdateRequest request) {
+    // public AgendamentoResponse reagendar(@PathVariable("id") Long idAgendamento, @Valid @RequestBody AgendamentoUpdateRequest request) {
     //     return agendamentoService.reagendar(idAgendamento, request);
     // }
 }
