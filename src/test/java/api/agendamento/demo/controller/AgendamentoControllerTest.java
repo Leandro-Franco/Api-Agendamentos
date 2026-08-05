@@ -53,18 +53,17 @@ class AgendamentoControllerTest {
                 .andExpect(jsonPath("$.title").value("Conflito de agendamento"));
     }
 
-        @Test
+    @Test
     void criar_deveResponder400_quandoTituloEstaEmBranco() throws Exception {
-
-        verify(agendamentoService, never()).criar(any());
-
         mockMvc.perform(post("/agendamentos")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(CORPO_VALIDO.replace("Consulta de rotina", "")))
+                .andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.codigo").value("VALIDACAO"))
                 .andExpect(jsonPath("$.title").value("Requisicao invalida"))
-                .andExpect(jsonPath("$.campos.titulo").exists())
-                .andDo(print());
+                .andExpect(jsonPath("$.campos.titulo").exists());
+
+        verify(agendamentoService, never()).criar(any());
     }
 }
