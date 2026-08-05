@@ -2,9 +2,12 @@ package api.agendamento.demo.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,15 +55,16 @@ class AgendamentoControllerTest {
 
         @Test
     void criar_deveResponder400_quandoTituloEstaEmBranco() throws Exception {
-        given(agendamentoService.criar(any(AgendamentoCreateRequest.class)))
-                .willThrow(new ConflitoDeAgendamentoException(
-                        "O titulo do agendamento nao pode estar em branco."));
+
+        verify(agendamentoService, never()).criar(any());
 
         mockMvc.perform(post("/agendamentos")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(CORPO_VALIDO.replace("Consulta de rotina", "")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.codigo").value("VALIDACAO"))
-                .andExpect(jsonPath("$.title").value("Requisicao invalida"));
+                .andExpect(jsonPath("$.title").value("Requisicao invalida"))
+                .andExpect(jsonPath("$.campos.titulo").exists())
+                .andDo(print());
     }
 }
