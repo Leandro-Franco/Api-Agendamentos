@@ -16,5 +16,19 @@ services:
       timeout: 5s
       retries: 5
 
+  app:
+    build: .
+    container_name: agendamentos-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Dentro do container, "localhost" e o proprio container. O host correto
+      # e o nome do servico, resolvido pelo DNS interno do Compose.
+      # Variavel de ambiente tem precedencia sobre o application.properties.
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/db_agendamento
+    ports:
+      - "8080:8080"
+
 volumes:
   postgres-data:
