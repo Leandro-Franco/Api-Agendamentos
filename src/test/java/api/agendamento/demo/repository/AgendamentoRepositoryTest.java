@@ -10,24 +10,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureDataSourceInitialization;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.springframework.context.annotation.Import;
 
+import api.agendamento.demo.TestcontainersConfiguration;
 import api.agendamento.demo.model.Agendamento;
 import api.agendamento.demo.model.StatusAgendamento;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @AutoConfigureDataSourceInitialization
-@Testcontainers
+@Import(TestcontainersConfiguration.class)
 class AgendamentoRepositoryTest {
-
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
 
     private static final Long ID_USUARIO = 1L;
 
@@ -55,7 +49,7 @@ class AgendamentoRepositoryTest {
                 .atualizadoEm(LocalDateTime.now())
                 .build();
     }
-    
+
     @Test
     void existsConflito_deveSerTrue_quandoOsIntervalosSeSobrepoem() {
         agendamentoRepository.save(agendamentoDas(14, 16));
