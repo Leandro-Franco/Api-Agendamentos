@@ -40,10 +40,9 @@ A suíte sobe seu próprio PostgreSQL via Testcontainers e executa as migrations
 Flyway. Não requer banco instalado, nem configuração, nem variável de ambiente.
 
 ### Aplicação — precisa de PostgreSQL
+```idem ``
 
-```sql
-CREATE DATABASE db_agendamento;
-```
+#### docker compose up -d
 
 Credenciais esperadas em `application.properties`: `postgres` / `postgres` em
 `localhost:5432`.
