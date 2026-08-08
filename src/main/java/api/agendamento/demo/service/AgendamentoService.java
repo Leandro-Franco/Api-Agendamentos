@@ -15,6 +15,8 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.validation.annotation.Validated;
 
+import api.agendamento.demo.exception.ConflitoDeAgendamentoException;
+import api.agendamento.demo.exception.IntervaloInvalidoException;
 @Service
 @Validated
 public class AgendamentoService {
@@ -118,22 +120,20 @@ public class AgendamentoService {
 // Validações de intervalo de datas, datas nulas e conflito de agendamento
     private void validateIntervaloDeDatas(LocalDateTime dataInicio, LocalDateTime dataFim) {
         if (dataFim.isBefore(dataInicio)) {
-            throw new IllegalArgumentException("A data de fim não pode ser anterior à data de início.");
+            throw new IntervaloInvalidoException("A data de fim não pode ser anterior à data de início.");
         }
     }
 
 
     private void validateDataIsNull(LocalDateTime dataInicio, LocalDateTime dataFim) {
         if (dataInicio == null || dataFim == null) {
-            throw new IllegalArgumentException("As datas de início e fim não podem ser nulas.");
-        }
+            throw new IntervaloInvalidoException("As datas de início e fim não podem ser nulas.");        }
     }
 
 
     private void checkConflitoDeAgendamento(Long idUsuario, LocalDateTime dataInicio, LocalDateTime dataFim, Long idAgendamento) {
         boolean hasConflict = agendamentoRepository.existsConflito(idUsuario, dataInicio, dataFim, idAgendamento);
         if (hasConflict) {
-            throw new IllegalArgumentException("Conflito de agendamento: já existe um agendamento para o usuário nesse intervalo de datas.");
-        }
+            throw new ConflitoDeAgendamentoException("Já existe um agendamento para o usuário nesse intervalo de datas.");        }
     }
 }
