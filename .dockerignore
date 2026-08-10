@@ -1,0 +1,21 @@
+# Artefatos de build: sao gerados dentro da imagem, nunca copiados de fora.
+target/
+
+# Historico e metadados de repositorio nao tem uso no build.
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# Configuracao de editor e de ferramentas locais.
+.vscode/
+.claude/
+.idea/
+
+# Documentacao nao entra no artefato.
+*.md
+
+# O proprio contexto de containerizacao nao precisa ir para dentro da imagem.
+Dockerfile
+.dockerignore
+docker-compose.yml
