@@ -164,6 +164,13 @@ cliente decide. A verificação vive no service e é coberta por teste com banco
 motivo; o `codigo` no `ProblemDetail` carrega o motivo para o cliente. Nenhuma das duas
 pontas faz parsing de frase em português.
 
+**A API é a fonte da verdade; o Google Calendar é espelho.** O chat entrega a verdade ao
+usuário, mas não a guarda — toda leitura do agente vem da API, e o Calendar recebe cópia
+só depois de a escrita ser aceita. Se o Calendar falhar, o agendamento continua existindo;
+se a API recusar, nada é espelhado. Dois sistemas gravando o mesmo fato divergem em
+silêncio, e foi o que aconteceu na primeira integração: a API guardou `10:00`, o Calendar
+exibiu `11:00`, ambos relataram sucesso.
+
 ---
 
 ## Limitações conhecidas
@@ -181,15 +188,22 @@ Documentadas de propósito — a lista é curta porque é real.
   de `INSERT` — há janela de corrida sob concorrência. A correção definitiva é uma
   `EXCLUDE USING gist` sobre `(id_usuario, intervalo)`, que torna a sobreposição
   estruturalmente impossível.
+- **`LocalDateTime` não guarda fuso.** A API grava `10:00` sem âncora temporal, então não
+  tem como perceber que um consumidor interpretou esse mesmo valor em outro fuso. Funciona
+  enquanto o sistema for de fuso único; a correção definitiva é `OffsetDateTime`.
+- **Edições feitas direto no Google Calendar não retornam.** Sendo espelho, ele não
+  propaga alterações de volta — arrastar um evento no calendário não muda o agendamento.
 
 ## Próximos passos
 
-1. **Deploy da imagem no Easypanel**, no mesmo servidor que já hospeda o n8n. A imagem
-   Docker já existe; o ganho é a rede interna entre os dois — URL estável, sem túnel e
-   sem exposição pública. É o passo que destrava a integração via Telegram.
-2. **Autenticação por header** (`X-API-Key`, filtro no Spring). Obrigatória se a API for
+1. **`GET /agendamentos` com filtros e paginação.** Exigido pela decisão de fonte da
+   verdade: sem listagem, o agente não consegue responder "o que tenho amanhã?" nem
+   chegar ao id de um agendamento a partir da linguagem natural — e as operações de
+   cancelar e confirmar, que dependem do id, ficam inalcançáveis pelo chat.
+2. **Checagem de dono** em `procurar`, `cancelar` e `confirmar`. Hoje as três recebem
+   apenas o id do agendamento e não comparam com o solicitante.
+3. **Autenticação por header** (`X-API-Key`, filtro no Spring). Obrigatória se a API for
    exposta publicamente; dispensável enquanto o tráfego for interno ao servidor.
-3. Pipeline de CI (Jenkins) — habilitado pela suíte não depender mais de banco local
-4. `GET /agendamentos` com filtros e paginação
+4. Pipeline de CI (Jenkins) — habilitado pela suíte não depender mais de banco local
 5. Publicação de eventos: SNS → SQS → Lambda
 6. Constraint `EXCLUDE` contra corrida na criação
