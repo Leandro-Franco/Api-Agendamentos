@@ -184,7 +184,12 @@ Documentadas de propósito — a lista é curta porque é real.
 
 ## Próximos passos
 
-1. Pipeline de CI (Jenkins) — habilitado pela suíte não depender mais de banco local
-2. `GET /agendamentos` com filtros e paginação
-3. Publicação de eventos: SNS → SQS → Lambda
-4. Constraint `EXCLUDE` contra corrida na criação
+1. **Deploy da imagem no Easypanel**, no mesmo servidor que já hospeda o n8n. A imagem
+   Docker já existe; o ganho é a rede interna entre os dois — URL estável, sem túnel e
+   sem exposição pública. É o passo que destrava a integração via Telegram.
+2. **Autenticação por header** (`X-API-Key`, filtro no Spring). Obrigatória se a API for
+   exposta publicamente; dispensável enquanto o tráfego for interno ao servidor.
+3. Pipeline de CI (Jenkins) — habilitado pela suíte não depender mais de banco local
+4. `GET /agendamentos` com filtros e paginação
+5. Publicação de eventos: SNS → SQS → Lambda
+6. Constraint `EXCLUDE` contra corrida na criação
