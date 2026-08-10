@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -65,5 +66,19 @@ class AgendamentoControllerTest {
                 .andExpect(jsonPath("$.campos.titulo").exists());
 
         verify(agendamentoService, never()).criar(any());
+    }
+
+    @Test
+    void criar_deveResponder409_quandoViolaIntegridadeNoBanco() throws Exception {
+        given(agendamentoService.criar(any(AgendamentoCreateRequest.class)))
+                .willThrow(new DataIntegrityViolationException("violacao de integridade"));
+
+        mockMvc.perform(post("/agendamentos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(CORPO_VALIDO))
+                .andDo(print())
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.codigo").value("VIOLACAO_INTEGRIDADE"))
+                .andExpect(jsonPath("$.title").value("Violacao de integridade"));
     }
 }

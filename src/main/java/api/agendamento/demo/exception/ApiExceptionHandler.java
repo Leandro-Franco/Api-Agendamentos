@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -53,6 +54,13 @@ public class ApiExceptionHandler {
                 "VALIDACAO", "Um ou mais campos sao invalidos.");
         problema.setProperty("campos", campos);
         return problema;
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ProblemDetail integridade(DataIntegrityViolationException ex) {
+        log.warn("Violacao de integridade", ex);
+        return montar(HttpStatus.CONFLICT, "Violacao de integridade", "VIOLACAO_INTEGRIDADE",
+                "A operacao viola uma restricao de integridade dos dados.");
     }
 
     @ExceptionHandler(Exception.class)
