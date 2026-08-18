@@ -1,5 +1,6 @@
 package api.agendamento.demo.exception;
 
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -61,6 +64,24 @@ public class ApiExceptionHandler {
         log.warn("Violacao de integridade", ex);
         return montar(HttpStatus.CONFLICT, "Violacao de integridade", "VIOLACAO_INTEGRIDADE",
                 "A operacao viola uma restricao de integridade dos dados.");
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ProblemDetail parametroAusente(MissingServletRequestParameterException ex) {
+        return montar(HttpStatus.BAD_REQUEST, "Parametro obrigatorio ausente", "PARAMETRO_AUSENTE",
+                "O parametro '" + ex.getParameterName() + "' e obrigatorio.");
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ProblemDetail parametroComTipoErrado(MethodArgumentTypeMismatchException ex) {
+        return montar(HttpStatus.BAD_REQUEST, "Parametro invalido", "PARAMETRO_INVALIDO",
+                "O parametro '" + ex.getName() + "' esta em formato incompativel.");
+    }
+
+    @ExceptionHandler(DateTimeParseException.class)
+    public ProblemDetail dataIlegivel(DateTimeParseException ex) {
+        return montar(HttpStatus.BAD_REQUEST, "Data invalida", "DATA_INVALIDA",
+                "Data fora do formato ISO 8601, exemplo 2026-09-01T14:00:00.");
     }
 
     @ExceptionHandler(Exception.class)
