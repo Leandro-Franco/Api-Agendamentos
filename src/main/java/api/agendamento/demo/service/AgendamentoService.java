@@ -1,5 +1,6 @@
 package api.agendamento.demo.service;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,16 +20,21 @@ import jakarta.validation.Valid;
 import org.springframework.validation.annotation.Validated;
 
 import api.agendamento.demo.exception.ConflitoDeAgendamentoException;
+import api.agendamento.demo.event.AgendamentoRetirado;
+import api.agendamento.demo.event.AgendamentoSalvo;
 import api.agendamento.demo.exception.IntervaloInvalidoException;
 @Service
 @Validated
 public class AgendamentoService {
 
     private final AgendamentoRepository agendamentoRepository;
+    private final ApplicationEventPublisher publisher;
 
 
-    public AgendamentoService(AgendamentoRepository agendamentoRepository) {
+    public AgendamentoService(AgendamentoRepository agendamentoRepository,
+                              ApplicationEventPublisher publisher) {
         this.agendamentoRepository = agendamentoRepository;
+        this.publisher = publisher;
     }
 
 
@@ -41,6 +47,7 @@ public class AgendamentoService {
 
         Agendamento agendamento = AgendamentoMapper.toEntity(request);
         agendamentoRepository.save(agendamento);
+        publisher.publishEvent(new AgendamentoSalvo(agendamento.getIdAgendamento()));
         return AgendamentoMapper.toResponse(agendamento);
     }
 
@@ -71,6 +78,7 @@ public class AgendamentoService {
 
         AgendamentoMapper.updateEntity(agendamento, request);
         agendamentoRepository.save(agendamento);
+        publisher.publishEvent(new AgendamentoSalvo(idAgendamento));
         return AgendamentoMapper.toResponse(agendamento);
     }
 
@@ -108,7 +116,9 @@ public class AgendamentoService {
         Agendamento agendamento = agendamentoRepository.findById(idAgendamento)
                 .orElseThrow(() -> new EntityNotFoundException("Agendamento não encontrado com o ID: " + idAgendamento));
 
+        String eventId = agendamento.getGoogleEventId();
         agendamentoRepository.delete(agendamento);
+        publisher.publishEvent(new AgendamentoRetirado(eventId));
     }
 
     @Transactional
@@ -116,9 +126,16 @@ public class AgendamentoService {
         Agendamento agendamento = agendamentoRepository.findById(idAgendamento)
                 .orElseThrow(() -> new EntityNotFoundException("Agendamento não encontrado com o ID: " + idAgendamento));
 
+        String eventId = agendamento.getGoogleEventId();
+
         agendamento.setStatus(api.agendamento.demo.model.StatusAgendamento.CANCELADO);
+        // A chave e zerada junto: o evento deixa de existir no calendario, e manter
+        // a referencia faria a reconciliacao acreditar que ainda ha espelho.
+        agendamento.setGoogleEventId(null);
         agendamento.setAtualizadoEm(LocalDateTime.now());
         agendamentoRepository.save(agendamento);
+
+        publisher.publishEvent(new AgendamentoRetirado(eventId));
         return AgendamentoMapper.toResponse(agendamento);
     }
 
