@@ -33,25 +33,45 @@ public class AgendamentoMapper {
                 info.getStatus(),
                 info.getIdUsuario(),
                 info.getCriadoEm().toString(),
-                info.getAtualizadoEm().toString()
+                info.getAtualizadoEm().toString(),
+                info.getGoogleEventId()
         );
     }
 
+    // Unica autoridade sobre como ler uma data vinda do cliente. Campo ausente e
+    // campo em branco significam a mesma coisa: nao alterar. Sem isso, uma string
+    // vazia entra no parse e o erro sobe como 500.
+    public static LocalDateTime parseData(String valor) {
+        return ausente(valor) ? null : LocalDateTime.parse(valor);
+    }
+
+    private static boolean ausente(String valor) {
+        return valor == null || valor.isBlank();
+    }
+
     public static void updateEntity(Agendamento agendamento, AgendamentoUpdateRequest request) {
-        if (request.titulo() != null) {
+        if (!ausente(request.titulo())) {
             agendamento.setTitulo(request.titulo());
         }
-        if (request.descricao() != null) {
+        if (!ausente(request.descricao())) {
             agendamento.setDescricao(request.descricao());
         }
-        if (request.dataInicio() != null) {
-            agendamento.setDataInicio(LocalDateTime.parse(request.dataInicio()));
+
+        LocalDateTime dataInicio = parseData(request.dataInicio());
+        if (dataInicio != null) {
+            agendamento.setDataInicio(dataInicio);
         }
-        if (request.dataFim() != null) {
-            agendamento.setDataFim(LocalDateTime.parse(request.dataFim()));
+
+        LocalDateTime dataFim = parseData(request.dataFim());
+        if (dataFim != null) {
+            agendamento.setDataFim(dataFim);
         }
+
         if (request.status() != null) {
             agendamento.setStatus(request.status());
+        }
+        if (!ausente(request.googleEventId())) {
+            agendamento.setGoogleEventId(request.googleEventId());
         }
         agendamento.setAtualizadoEm(LocalDateTime.now());
     }

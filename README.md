@@ -51,7 +51,7 @@ Credenciais esperadas em `application.properties`: `postgres` / `postgres` em
 ./mvnw spring-boot:run
 ```
 
-O Flyway aplica as três migrations na subida. A aplicação escuta em `:8080`.
+O Flyway aplica as quatro migrations na subida. A aplicação escuta em `:8080`.
 
 ---
 
@@ -62,6 +62,7 @@ Base: `/agendamentos`
 | Método | Caminho | Ação |
 |---|---|---|
 | `POST` | `/agendamentos` | Cria um agendamento |
+| `GET` | `/agendamentos` | Lista por usuário, com janela opcional e paginação |
 | `GET` | `/agendamentos/{id}` | Busca por id |
 | `PUT` | `/agendamentos/{id}` | Atualiza campos |
 | `PUT` | `/agendamentos/{id}/confirmar` | `AGENDADO` → `CONFIRMADO` |
@@ -83,6 +84,17 @@ curl -X POST http://localhost:8080/agendamentos \
   }'
 ```
 
+A listagem responde duas perguntas com um endpoint só. Com janela, ela diz o que existe
+naquele intervalo — e uma lista vazia é a resposta de disponibilidade:
+
+```bash
+curl 'http://localhost:8080/agendamentos?idUsuario=1&de=2026-08-12T00:00:00&ate=2026-08-12T23:59:59'
+```
+
+`idUsuario` é obrigatório: a listagem nasce escopada ao dono, em vez de devolver tudo e
+confiar no cliente para filtrar. `de` e `ate` são opcionais; ausentes significam sem limite.
+Cancelados não aparecem.
+
 Ciclo de vida: `AGENDADO → CONFIRMADO → CONCLUIDO`, com `CANCELADO` como saída.
 
 ---
@@ -100,6 +112,10 @@ cliente e não para leitura humana.
 | Bean Validation reprovou o corpo | `400` | `VALIDACAO` |
 | JSON malformado | `400` | `CORPO_ILEGIVEL` |
 | Id inexistente | `404` | `NAO_ENCONTRADO` |
+| Violação de restrição no banco (ex.: usuário inexistente) | `409` | `VIOLACAO_INTEGRIDADE` |
+| Parâmetro de query obrigatório ausente | `400` | `PARAMETRO_AUSENTE` |
+| Parâmetro de query com tipo incompatível | `400` | `PARAMETRO_INVALIDO` |
+| Data fora do formato ISO 8601 | `400` | `DATA_INVALIDA` |
 | Falha não prevista | `500` | `ERRO_INTERNO` |
 
 ```json
@@ -124,7 +140,7 @@ agente insistir em uma operação que jamais teria sucesso.
 ## Testes
 
 ```
-Tests run: 7, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 18, Failures: 0, Errors: 0, Skipped: 0
 ```
 
 Cada teste corresponde a um defeito que existiu neste repositório. Nenhum foi escrito
@@ -132,9 +148,9 @@ para inflar cobertura.
 
 | Classe | Camada | Defeito que ele trava |
 |---|---|---|
-| `AgendamentoMapperTest` | JUnit puro | mapper não preenchia `idUsuario`, coluna `NOT NULL` |
-| `AgendamentoControllerTest` | `@WebMvcTest` | status HTTP e formato do erro |
-| `AgendamentoRepositoryTest` | `@DataJpaTest` + Testcontainers | argumentos invertidos em `existsConflito` |
+| `AgendamentoMapperTest` | JUnit puro | mapper não preenchia `idUsuario`, coluna `NOT NULL`; string vazia entrando em `LocalDateTime.parse` |
+| `AgendamentoControllerTest` | `@WebMvcTest` | status HTTP e formato do erro; parâmetro obrigatório ausente virando `500` |
+| `AgendamentoRepositoryTest` | `@DataJpaTest` + Testcontainers | argumentos invertidos em `existsConflito`; janela da listagem e exclusão de cancelados |
 | `DemoApplicationTests` | `@SpringBootTest` | divergência entre schema do Flyway e entidades JPA |
 
 O teste de repositório sobe um PostgreSQL real e aplica as migrations de produção — o
@@ -191,19 +207,23 @@ Documentadas de propósito — a lista é curta porque é real.
 - **`LocalDateTime` não guarda fuso.** A API grava `10:00` sem âncora temporal, então não
   tem como perceber que um consumidor interpretou esse mesmo valor em outro fuso. Funciona
   enquanto o sistema for de fuso único; a correção definitiva é `OffsetDateTime`.
+- **Dev e produção rodam versões diferentes do PostgreSQL.** A suíte e o compose usam
+  `postgres:16-alpine`; o serviço no Easypanel subiu com o 17. Isso enfraquece a garantia
+  de que o schema exercitado no teste é o mesmo de produção. Alinhar os dois.
 - **Edições feitas direto no Google Calendar não retornam.** Sendo espelho, ele não
   propaga alterações de volta — arrastar um evento no calendário não muda o agendamento.
+- **O espelho ainda só reflete a criação.** `google_event_id` já é persistido, mas o fluxo
+  no N8N não usa a chave para atualizar nem remover o evento. Cancelar na API deixa o
+  compromisso no calendário.
 
 ## Próximos passos
 
-1. **`GET /agendamentos` com filtros e paginação.** Exigido pela decisão de fonte da
-   verdade: sem listagem, o agente não consegue responder "o que tenho amanhã?" nem
-   chegar ao id de um agendamento a partir da linguagem natural — e as operações de
-   cancelar e confirmar, que dependem do id, ficam inalcançáveis pelo chat.
-2. **Checagem de dono** em `procurar`, `cancelar` e `confirmar`. Hoje as três recebem
-   apenas o id do agendamento e não comparam com o solicitante.
-3. **Autenticação por header** (`X-API-Key`, filtro no Spring). Obrigatória se a API for
+1. **Checagem de dono** em `procurar`, `cancelar`, `confirmar` e `deletar`. As quatro
+   recebem apenas o id do agendamento e não comparam com o solicitante. A listagem já
+   nasce escopada, o que limita a descoberta de ids alheios — mas um id adivinhado
+   ainda passa.
+2. **Autenticação por header** (`X-API-Key`, filtro no Spring). Obrigatória se a API for
    exposta publicamente; dispensável enquanto o tráfego for interno ao servidor.
-4. Pipeline de CI (Jenkins) — habilitado pela suíte não depender mais de banco local
-5. Publicação de eventos: SNS → SQS → Lambda
-6. Constraint `EXCLUDE` contra corrida na criação
+3. Pipeline de CI (Jenkins) — habilitado pela suíte não depender mais de banco local
+4. Publicação de eventos: SNS → SQS → Lambda
+5. Constraint `EXCLUDE` contra corrida na criação

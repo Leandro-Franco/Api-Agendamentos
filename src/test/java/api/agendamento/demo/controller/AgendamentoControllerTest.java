@@ -4,10 +4,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +21,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import api.agendamento.demo.dto.AgendamentoCreateRequest;
+import api.agendamento.demo.dto.AgendamentoPageResponse;
 import api.agendamento.demo.exception.ConflitoDeAgendamentoException;
 import api.agendamento.demo.service.AgendamentoService;
 
@@ -80,5 +84,24 @@ class AgendamentoControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.codigo").value("VIOLACAO_INTEGRIDADE"))
                 .andExpect(jsonPath("$.title").value("Violacao de integridade"));
+    }
+
+    @Test
+    void listar_deveResponder200_comAPaginaVindaDoServico() throws Exception {
+        given(agendamentoService.listar(any(), any(), any(), any()))
+                .willReturn(new AgendamentoPageResponse(List.of(), 0, 20, 0L, true));
+
+        mockMvc.perform(get("/agendamentos").param("idUsuario", "1"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(0))
+                .andExpect(jsonPath("$.ultimaPagina").value(true));
+    }
+
+    @Test
+    void listar_deveResponder400_quandoIdUsuarioNaoEInformado() throws Exception {
+        mockMvc.perform(get("/agendamentos"))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
     }
 }

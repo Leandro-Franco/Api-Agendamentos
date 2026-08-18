@@ -8,6 +8,7 @@ public record AgendamentoUpdateRequest(
     @Size(max = 500) String descricao,
     String dataInicio,
     String dataFim,
-    StatusAgendamento status
+    StatusAgendamento status,
+    String googleEventId
 ) {
 }

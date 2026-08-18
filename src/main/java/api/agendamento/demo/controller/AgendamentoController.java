@@ -1,13 +1,20 @@
 package api.agendamento.demo.controller;
 
+import java.time.LocalDateTime;
+
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import api.agendamento.demo.dto.AgendamentoCreateRequest;
+import api.agendamento.demo.dto.AgendamentoPageResponse;
 import api.agendamento.demo.dto.AgendamentoResponse;
 import api.agendamento.demo.dto.AgendamentoUpdateRequest;
 import api.agendamento.demo.service.AgendamentoService;
@@ -28,6 +35,19 @@ public class AgendamentoController {
     @PostMapping
     public AgendamentoResponse criar(@Valid @RequestBody AgendamentoCreateRequest request) {
         return agendamentoService.criar(request);
+    }
+
+    // idUsuario e obrigatorio: a listagem nasce escopada ao dono, em vez de
+    // devolver tudo e deixar o cliente filtrar.
+    @GetMapping
+    public AgendamentoPageResponse listar(
+            @RequestParam("idUsuario") Long idUsuario,
+            @RequestParam(value = "de", required = false)
+                @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime de,
+            @RequestParam(value = "ate", required = false)
+                @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime ate,
+            @PageableDefault(size = 20, sort = "dataInicio") Pageable pageable) {
+        return agendamentoService.listar(idUsuario, de, ate, pageable);
     }
 
     @PutMapping("/{id}")
