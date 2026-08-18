@@ -1,6 +1,7 @@
 package api.agendamento.demo.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDateTime;
 
@@ -12,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureDataSourceInitialization;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.context.annotation.Import;
 
@@ -105,5 +107,34 @@ class AgendamentoRepositoryTest {
                 ID_USUARIO, null, null, PageRequest.of(0, 10));
 
         assertThat(pagina.getContent()).isEmpty();
+    }
+
+    @Test
+    void deveGuardarERecuperarOIdDoEventoNoCalendar() {
+        Agendamento agendamento = agendamentoDas(14, 16);
+        agendamento.setGoogleEventId("uh873e6cpufp1m7jmgp3aer32c");
+
+        Long id = agendamentoRepository.saveAndFlush(agendamento).getIdAgendamento();
+
+        assertThat(agendamentoRepository.findById(id))
+                .get()
+                .extracting(Agendamento::getGoogleEventId)
+                .isEqualTo("uh873e6cpufp1m7jmgp3aer32c");
+    }
+
+    // Um evento do calendario pertence a um agendamento so. Sem essa trava, um
+    // reenvio duplicado faria dois registros disputarem o mesmo evento, e apagar
+    // um deles removeria o evento do outro.
+    @Test
+    void naoDeveAceitarDoisAgendamentosNoMesmoEventoDoCalendar() {
+        Agendamento primeiro = agendamentoDas(9, 10);
+        primeiro.setGoogleEventId("evento-repetido");
+        agendamentoRepository.saveAndFlush(primeiro);
+
+        Agendamento segundo = agendamentoDas(14, 16);
+        segundo.setGoogleEventId("evento-repetido");
+
+        assertThatThrownBy(() -> agendamentoRepository.saveAndFlush(segundo))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 }

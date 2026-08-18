@@ -33,7 +33,8 @@ public class AgendamentoMapper {
                 info.getStatus(),
                 info.getIdUsuario(),
                 info.getCriadoEm().toString(),
-                info.getAtualizadoEm().toString()
+                info.getAtualizadoEm().toString(),
+                info.getGoogleEventId()
         );
     }
 
@@ -68,6 +69,9 @@ public class AgendamentoMapper {
 
         if (request.status() != null) {
             agendamento.setStatus(request.status());
+        }
+        if (!ausente(request.googleEventId())) {
+            agendamento.setGoogleEventId(request.googleEventId());
         }
         agendamento.setAtualizadoEm(LocalDateTime.now());
     }

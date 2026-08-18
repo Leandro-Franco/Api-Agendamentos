@@ -45,7 +45,7 @@ class AgendamentoMapperTest {
         LocalDateTime fimOriginal = entidade.getDataFim();
 
         AgendamentoMapper.updateEntity(entidade,
-                new AgendamentoUpdateRequest(null, null, "", "   ", null));
+                new AgendamentoUpdateRequest(null, null, "", "   ", null, null));
 
         assertThat(entidade.getDataInicio()).isEqualTo(inicioOriginal);
         assertThat(entidade.getDataFim()).isEqualTo(fimOriginal);
@@ -56,7 +56,7 @@ class AgendamentoMapperTest {
         Agendamento entidade = AgendamentoMapper.toEntity(novaRequest());
 
         AgendamentoMapper.updateEntity(entidade,
-                new AgendamentoUpdateRequest("", null, null, null, null));
+                new AgendamentoUpdateRequest("", null, null, null, null, null));
 
         assertThat(entidade.getTitulo()).isEqualTo("Reunião de equipe");
     }
@@ -66,8 +66,18 @@ class AgendamentoMapperTest {
         Agendamento entidade = AgendamentoMapper.toEntity(novaRequest());
 
         AgendamentoMapper.updateEntity(entidade,
-                new AgendamentoUpdateRequest(null, null, "2027-06-01T15:00:00", null, null));
+                new AgendamentoUpdateRequest(null, null, "2027-06-01T15:00:00", null, null, null));
 
         assertThat(entidade.getDataInicio()).isEqualTo(LocalDateTime.of(2027, 6, 1, 15, 0));
+    }
+
+    @Test
+    void updateEntity_deveGravarOIdDoEventoNoCalendar() {
+        Agendamento entidade = AgendamentoMapper.toEntity(novaRequest());
+
+        AgendamentoMapper.updateEntity(entidade,
+                new AgendamentoUpdateRequest(null, null, null, null, null, "uh873e6cpufp1m7jmgp3aer32c"));
+
+        assertThat(entidade.getGoogleEventId()).isEqualTo("uh873e6cpufp1m7jmgp3aer32c");
     }
 }

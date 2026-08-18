@@ -51,7 +51,7 @@ Credenciais esperadas em `application.properties`: `postgres` / `postgres` em
 ./mvnw spring-boot:run
 ```
 
-O Flyway aplica as três migrations na subida. A aplicação escuta em `:8080`.
+O Flyway aplica as quatro migrations na subida. A aplicação escuta em `:8080`.
 
 ---
 
@@ -140,7 +140,7 @@ agente insistir em uma operação que jamais teria sucesso.
 ## Testes
 
 ```
-Tests run: 15, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 18, Failures: 0, Errors: 0, Skipped: 0
 ```
 
 Cada teste corresponde a um defeito que existiu neste repositório. Nenhum foi escrito
@@ -212,6 +212,9 @@ Documentadas de propósito — a lista é curta porque é real.
   de que o schema exercitado no teste é o mesmo de produção. Alinhar os dois.
 - **Edições feitas direto no Google Calendar não retornam.** Sendo espelho, ele não
   propaga alterações de volta — arrastar um evento no calendário não muda o agendamento.
+- **O espelho ainda só reflete a criação.** `google_event_id` já é persistido, mas o fluxo
+  no N8N não usa a chave para atualizar nem remover o evento. Cancelar na API deixa o
+  compromisso no calendário.
 
 ## Próximos passos
 

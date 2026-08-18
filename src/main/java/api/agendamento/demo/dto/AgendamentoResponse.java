@@ -11,6 +11,7 @@ public record AgendamentoResponse(
         StatusAgendamento status,
         Long idUsuario,
         String criadoEm,
-        String atualizadoEm
+        String atualizadoEm,
+        String googleEventId
 ) {
 }

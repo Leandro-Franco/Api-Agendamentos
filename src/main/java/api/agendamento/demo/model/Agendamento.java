@@ -47,6 +47,10 @@ public class Agendamento {
     @Column(name = "data_fim", nullable = false)
     private LocalDateTime dataFim;
 
+    // Chave do evento espelhado no Google Calendar. Nulo enquanto nao houver copia.
+    @Column(name = "google_event_id", length = 1024)
+    private String googleEventId;
+
     @Column(name = "criado_em", nullable = false)
     private LocalDateTime criadoEm;
 
