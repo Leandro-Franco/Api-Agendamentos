@@ -140,7 +140,7 @@ agente insistir em uma operação que jamais teria sucesso.
 ## Testes
 
 ```
-Tests run: 18, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 24, Failures: 0, Errors: 0, Skipped: 0
 ```
 
 Cada teste corresponde a um defeito que existiu neste repositório. Nenhum foi escrito
@@ -152,6 +152,7 @@ para inflar cobertura.
 | `AgendamentoControllerTest` | `@WebMvcTest` | status HTTP e formato do erro; parâmetro obrigatório ausente virando `500` |
 | `AgendamentoRepositoryTest` | `@DataJpaTest` + Testcontainers | argumentos invertidos em `existsConflito`; janela da listagem e exclusão de cancelados |
 | `DemoApplicationTests` | `@SpringBootTest` | divergência entre schema do Flyway e entidades JPA |
+| `SincronizadorDeCalendarTest` | JUnit + Mockito | falha do calendário escapando e derrubando a operação |
 
 O teste de repositório sobe um PostgreSQL real e aplica as migrations de produção — o
 schema exercitado é o mesmo que roda em produção, com `CHECK`, índice e trigger. Um banco
@@ -187,6 +188,42 @@ se a API recusar, nada é espelhado. Dois sistemas gravando o mesmo fato diverge
 silêncio, e foi o que aconteceu na primeira integração: a API guardou `10:00`, o Calendar
 exibiu `11:00`, ambos relataram sucesso.
 
+**O espelho é atualizado depois do commit, nunca dentro dele.** O Google não participa
+da transação do banco: chamá-lo de dentro seguraria conexão e lock durante uma requisição
+de rede, e não haveria como desfazer o evento se o commit falhasse em seguida. O service
+publica um evento de domínio e um `@TransactionalEventListener(AFTER_COMMIT)` espelha.
+Falha no espelho é registrada em log e engolida — `google_event_id` continua nulo, e é
+por esse nulo que a reconciliação encontra o que ficou para trás.
+
+---
+
+## Espelho no Google Calendar
+
+Desligado por padrão. Sem configuração, a API funciona normalmente e nada é espelhado —
+a fonte da verdade não depende do espelho para existir.
+
+```properties
+agendamentos.calendar.habilitado=true
+agendamentos.calendar.credenciais=/caminho/service-account.json
+agendamentos.calendar.id=voce@gmail.com
+agendamentos.calendar.fuso=America/Sao_Paulo
+```
+
+Preparo, uma vez:
+
+1. No Google Cloud, crie um projeto e habilite a **Google Calendar API**
+2. Crie uma **conta de serviço** e baixe o JSON da chave
+3. No Google Calendar, compartilhe a sua agenda com o e-mail da conta de serviço
+   (`algo@projeto.iam.gserviceaccount.com`), permissão **"Fazer alterações nos eventos"**
+
+Dois detalhes que custam tempo se passarem batido:
+
+- **`id` não é `primary`.** Autenticando como conta de serviço, `primary` é a agenda da
+  própria conta de serviço, que ninguém enxerga. Use o e-mail da agenda de destino.
+- **`fuso` é obrigatório na prática.** A entidade guarda `LocalDateTime`, que não carrega
+  fuso. Alguém precisa dizer o que `10:00` significa em tempo absoluto, e essa decisão
+  fica aqui — explícita e num lugar só — em vez de virar o padrão de qualquer cliente.
+
 ---
 
 ## Limitações conhecidas
@@ -212,9 +249,10 @@ Documentadas de propósito — a lista é curta porque é real.
   de que o schema exercitado no teste é o mesmo de produção. Alinhar os dois.
 - **Edições feitas direto no Google Calendar não retornam.** Sendo espelho, ele não
   propaga alterações de volta — arrastar um evento no calendário não muda o agendamento.
-- **O espelho ainda só reflete a criação.** `google_event_id` já é persistido, mas o fluxo
-  no N8N não usa a chave para atualizar nem remover o evento. Cancelar na API deixa o
-  compromisso no calendário.
+- **A reconciliação ainda não existe.** Quando o Google falha, `google_event_id` fica nulo
+  e nada volta para consertar depois. A consulta que encontra os pendentes é
+  `WHERE google_event_id IS NULL AND status IN ('AGENDADO', 'CONFIRMADO')`; falta o job
+  que a executa.
 
 ## Próximos passos
 
