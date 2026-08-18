@@ -1,11 +1,14 @@
 package api.agendamento.demo.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
 import api.agendamento.demo.dto.AgendamentoCreateRequest;
+import api.agendamento.demo.dto.AgendamentoPageResponse;
 import api.agendamento.demo.dto.AgendamentoResponse;
 import api.agendamento.demo.dto.AgendamentoUpdateRequest;
 import api.agendamento.demo.mapper.AgendamentoMapper;
@@ -32,8 +35,8 @@ public class AgendamentoService {
     @Transactional
     public AgendamentoResponse criar(@Valid AgendamentoCreateRequest request) {
 
-        validateIntervaloDeDatas(request.dataInicio(), request.dataFim());
         validateDataIsNull(request.dataInicio(), request.dataFim());
+        validateIntervaloDeDatas(request.dataInicio(), request.dataFim());
         checkConflitoDeAgendamento(request.idUsuario(), request.dataInicio(), request.dataFim(), null);
 
         Agendamento agendamento = AgendamentoMapper.toEntity(request);
@@ -47,14 +50,19 @@ public class AgendamentoService {
         Agendamento agendamento = agendamentoRepository.findById(idAgendamento)
                 .orElseThrow(() -> new EntityNotFoundException("Agendamento não encontrado com o ID: " + idAgendamento));
 
-        if (request.dataInicio() != null && request.dataFim() != null) {
+        LocalDateTime novaDataInicio = AgendamentoMapper.parseData(request.dataInicio());
+        LocalDateTime novaDataFim = AgendamentoMapper.parseData(request.dataFim());
 
-            LocalDateTime dataInicio = request.dataInicio() != null
-                ? LocalDateTime.parse(request.dataInicio())
-               : agendamento.getDataInicio();
+        // Basta UMA das datas mudar para o intervalo mudar. Exigir as duas deixava
+        // passar sem checagem quem alterasse so o inicio ou so o fim.
+        if (novaDataInicio != null || novaDataFim != null) {
 
-            LocalDateTime dataFim = request.dataFim() != null
-               ? LocalDateTime.parse(request.dataFim())
+            LocalDateTime dataInicio = novaDataInicio != null
+                ? novaDataInicio
+                : agendamento.getDataInicio();
+
+            LocalDateTime dataFim = novaDataFim != null
+                ? novaDataFim
                 : agendamento.getDataFim();
 
             validateIntervaloDeDatas(dataInicio, dataFim);
@@ -72,6 +80,26 @@ public class AgendamentoService {
                 .orElseThrow(() -> new EntityNotFoundException("Agendamento não encontrado com o ID: " + idAgendamento));
 
         return AgendamentoMapper.toResponse(agendamento);
+    }
+
+    // Lista os agendamentos ativos de um usuario dentro de uma janela opcional.
+    // Serve tambem para checar disponibilidade: janela sem resultado é horario livre.
+    @Transactional(readOnly = true)
+    public AgendamentoPageResponse listar(Long idUsuario, LocalDateTime de, LocalDateTime ate, Pageable pageable) {
+
+        if (de != null && ate != null) {
+            validateIntervaloDeDatas(de, ate);
+        }
+
+        Page<Agendamento> pagina = agendamentoRepository.listar(idUsuario, de, ate, pageable);
+
+        return new AgendamentoPageResponse(
+                pagina.getContent().stream().map(AgendamentoMapper::toResponse).toList(),
+                pagina.getNumber(),
+                pagina.getSize(),
+                pagina.getTotalElements(),
+                pagina.isLast()
+        );
     }
 
 
@@ -127,13 +155,15 @@ public class AgendamentoService {
 
     private void validateDataIsNull(LocalDateTime dataInicio, LocalDateTime dataFim) {
         if (dataInicio == null || dataFim == null) {
-            throw new IntervaloInvalidoException("As datas de início e fim não podem ser nulas.");        }
+            throw new IntervaloInvalidoException("As datas de início e fim não podem ser nulas.");
+        }
     }
 
 
     private void checkConflitoDeAgendamento(Long idUsuario, LocalDateTime dataInicio, LocalDateTime dataFim, Long idAgendamento) {
         boolean hasConflict = agendamentoRepository.existsConflito(idUsuario, dataInicio, dataFim, idAgendamento);
         if (hasConflict) {
-            throw new ConflitoDeAgendamentoException("Já existe um agendamento para o usuário nesse intervalo de datas.");        }
+            throw new ConflitoDeAgendamentoException("Já existe um agendamento para o usuário nesse intervalo de datas.");
+        }
     }
 }
